@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HireStream Pro | Call & Save</title>
+    <style>
+        :root { --primary: #2563eb; --success: #10b981; --danger: #ef4444; --bg: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 20px; margin: 0; }
+        
+        .nav-tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; background: #e2e8f0; font-weight: 600; }
+        .tab-btn.active { background: var(--primary); color: white; }
+
+        .container { max-width: 850px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .hidden { display: none; }
+
+        /* Form & Inputs */
+        .grid-form { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .full { grid-column: span 2; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
+        
+        /* Worker Card */
+        .worker-card { border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; margin-bottom: 15px; 
+                       display: flex; align-items: center; gap: 15px; background: white; }
+        .profile-img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
+        .worker-details { flex-grow: 1; }
+        
+        /* Interaction Buttons */
+        .action-bar { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-sm { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+        .btn-call { background: var(--success); color: white; text-decoration: none; }
+        .btn-save { background: #facc15; color: #854d0e; }
+        .btn-like { background: #dbeafe; color: #1e40af; }
+        .btn-dislike { background: #fee2e2; color: #991b1b; }
+
+        /* Saved Sidebar */
+        #saved-section { margin-top: 30px; border-top: 2px dashed #cbd5e1; padding-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="showTab('worker-tab')">Worker Registration</button>
+        <button class="tab-btn" onclick="showTab('employer-tab')">Hiring Dashboard</button>
+    </div>
+
+    <div id="worker-tab" class="container">
+        <h2>Register Worker Profile</h2>
+        <div class="grid-form">
+            <div class="full">
+                <label>Profile Photo</label>
+                <input type="file" id="w-photo" accept="image/*" onchange="previewImage(event)">
+            </div>
+            <div class="full"><input type="text" id="w-name" placeholder="Full Name"></div>
+            <div><input type="email" id="w-email" placeholder="Email Address"></div>
+            <div><input type="tel" id="w-phone" placeholder="Phone Number (for Calls)"></div>
+            <div><input type="text" id="w-edu" placeholder="Education"></div>
+            <div><input type="number" id="w-points" placeholder="Working Points"></div>
+            <div class="full"><input type="text" id="w-skills" placeholder="Skills (Comma separated)"></div>
+            <button class="full tab-btn active" onclick="registerWorker()">Publish Profile</button>
+        </div>
+    </div>
+
+    <div id="employer-tab" class="container hidden">
+        <input type="text" id="search" placeholder="Search workers..." onkeyup="renderWorkers()" style="margin-bottom:20px">
+        
+        <div id="worker-list"></div>
+
+        <div id="saved-section">
+            <h3>📌 Saved for Later</h3>
+            <div id="saved-list"></div>
+        </div>
+    </div>
+
+    <script>
+        let workers = JSON.parse(localStorage.getItem('hire_db_v2')) || [];
+        let savedIds = JSON.parse(localStorage.getItem('saved_workers')) || [];
+        let tempPhoto = "https://via.placeholder.com/80";
+
+        function showTab(id) {
+            document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.remove('hidden');
+            if(id === 'employer-tab') renderWorkers();
+        }
+
+        function previewImage(event) {
+            const reader = new FileReader();
+            reader.onload = function() { tempPhoto = reader.result; };
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        function registerWorker() {
+            const worker = {
+                id: Date.now(),
+                name: document.getElementById('w-name').value,
+                email: document.getElementById('w-email').value,
+                phone: document.getElementById('w-phone').value,
+                edu: document.getElementById('w-edu').value,
+                points: parseInt(document.getElementById('w-points').value) || 0,
+                skills: document.getElementById('w-skills').value,
+                photo: tempPhoto,
+                likes: 0,
+                dislikes: 0
+            };
+
+            if(!worker.name || !worker.phone) return alert("Name and Phone are required!");
+            
+            workers.push(worker);
+            localStorage.setItem('hire_db_v2', JSON.stringify(workers));
+            alert("Profile Created!");
+            showTab('employer-tab');
+        }
+
+        function handleReaction(id, type) {
+            const worker = workers.find(w => w.id === id);
+            if(type === 'like') worker.likes++;
+            else worker.dislikes++;
+            localStorage.setItem('hire_db_v2', JSON.stringify(workers));
+            renderWorkers();
+        }
+
+        function saveProfile(id) {
+            if(!savedIds.includes(id)) {
+                savedIds.push(id);
+                localStorage.setItem('saved_workers', JSON.stringify(savedIds));
+                renderWorkers();
+            }
+        }
+
+        function renderWorkers() {
+            const list = document.getElementById('worker-list');
+            const savedList = document.getElementById('saved-list');
+            const search = document.getElementById('search').value.toLowerCase();
+
+            const html = (w) => `
+                <div class="worker-card">
+                    <img src="${w.photo}" class="profile-img">
+                    <div class="worker-details">
+                        <h3 style="margin:0">${w.name} <small style="font-weight:normal; color:#666">(${w.edu})</small></h3>
+                        <div style="font-size:13px; color:#444">Skills: ${w.skills}</div>
+                        <div class="action-bar">
+                            <button class="btn-sm btn-like" onclick="handleReaction(${w.id}, 'like')">👍 ${w.likes}</button>
+                            <button class="btn-sm btn-dislike" onclick="handleReaction(${w.id}, 'dislike')">👎 ${w.dislikes}</button>
+                            <a href="tel:${w.phone}" class="btn-sm btn-call">📞 Call</a>
+                            <button class="btn-sm btn-save" onclick="saveProfile(${w.id})">⭐ Save</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            list.innerHTML = workers.filter(w => w.name.toLowerCase().includes(search)).map(html).join('');
+            savedList.innerHTML = workers.filter(w => savedIds.includes(w.id)).map(html).join('');
+        }
+    </script>
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyAADHY0ZOZb6DbUyD3XcXMuLVNUivzP-Es",
+    authDomain: "deepworkers-4405f.firebaseapp.com",
+    projectId: "deepworkers-4405f",
+    storageBucket: "deepworkers-4405f.firebasestorage.app",
+    messagingSenderId: "1043984625436",
+    appId: "1:1043984625436:web:278fb1e8afdb81636a94d9",
+    measurementId: "G-T0GYNMK5G7"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+</body>
+</html>
