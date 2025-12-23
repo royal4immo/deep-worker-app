@@ -153,12 +153,12 @@
             list.innerHTML = workers.filter(w => w.name.toLowerCase().includes(search)).map(html).join('');
             savedList.innerHTML = workers.filter(w => savedIds.includes(w.id)).map(html).join('');
         }
-    </script>
 <script type="module">
-  // 1. Add the Firestore import line here
+  // 1. Import the specific Firestore functions
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+  // 2. Your actual config from Screenshot (18)
   const firebaseConfig = {
     apiKey: "AIzaSyAADHY0ZOZb6DbUyD3XcXMuLVNUivzP-Es",
     authDomain: "deepworkers-4405f.firebaseapp.com",
@@ -169,19 +169,27 @@
     measurementId: "G-T0GYNMK5G7"
   };
 
-  // 2. Initialize Firebase and Firestore
+  // 3. Initialize Firebase and Firestore
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // 3. Make sure your "Save" function uses 'db'
-  window.saveProfile = async function(data) {
+  // 4. Update the save function to talk to your database
+  window.saveProfile = async function() {
+    const name = document.querySelector('input[placeholder="Full Name"]').value;
+    const phone = document.querySelector('input[placeholder="Phone Number (for Calls)"]').value;
+
     try {
-      await addDoc(collection(db, "workers"), data);
-      alert("Registration Permanent!");
+      await addDoc(collection(db, "workers"), {
+        fullName: name,
+        phoneNumber: phone,
+        timestamp: new Date()
+      });
+      alert("Registration Successful and Permanent!");
     } catch (e) {
-      console.error("Error adding document: ", e);
+      console.error("Error: ", e);
+      alert("Error saving: " + e.message);
     }
-  }
+  };
 </script>
 </body>
 </html>
