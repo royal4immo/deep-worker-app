@@ -155,14 +155,10 @@
         }
     </script>
 <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+  // 1. Add the Firestore import line here
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
   const firebaseConfig = {
     apiKey: "AIzaSyAADHY0ZOZb6DbUyD3XcXMuLVNUivzP-Es",
     authDomain: "deepworkers-4405f.firebaseapp.com",
@@ -173,9 +169,19 @@
     measurementId: "G-T0GYNMK5G7"
   };
 
-  // Initialize Firebase
+  // 2. Initialize Firebase and Firestore
   const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
+  const db = getFirestore(app);
+
+  // 3. Make sure your "Save" function uses 'db'
+  window.saveProfile = async function(data) {
+    try {
+      await addDoc(collection(db, "workers"), data);
+      alert("Registration Permanent!");
+    } catch (e) {
+      console.error("Error adding document: ", e);
+    }
+  }
 </script>
 </body>
 </html>
